@@ -9,5 +9,7 @@
         //Delete
 
         //getAll()
+
+        //PRETVORBA IZ ZAHTJEVA U UGOVOR
     }
 }

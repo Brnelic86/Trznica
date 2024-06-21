@@ -1,0 +1,387 @@
+﻿@page "/PrikazStolova"
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@using Microsoft.EntityFrameworkCore
+@using System.Text
+@using System.Security.Cryptography
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Lists
+@using Syncfusion.Blazor.Navigations
+@using Trznica.Data
+@using Trznica.Models;
+@using Syncfusion.Blazor.Grids;
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Notifications
+
+<div class="mt-2">
+    <div id="container">
+        <div class="listview-container">
+            <br />
+            <h3>Tržnica</h3>
+            <br />
+            <SfListView style="width:230px;height:400px;" @ref="@SfListKatalog" DataSource="@stolasList">
+                <ListViewFieldSettings TValue="Stol"></ListViewFieldSettings>
+                <ListViewEvents TValue="Stol"></ListViewEvents>
+                <ListViewTemplates TValue="Stol">
+                    <Template>
+                        @{
+                            Stol stolovi = (Stol)context;
+
+                            <div style="@GetStyle(stolovi)">
+                                <div style="@GetStyle(stolovi)" @onclick="(e=>daj(stolovi))"><span class="e-list-content">@stolovi.RedniBroj</span></div>
+                            </div>
+                        }
+                    </Template>
+                </ListViewTemplates>
+            </SfListView>
+        </div>
+    </div>
+</div>
+
+<Syncfusion.Blazor.Popups.SfDialog Visible="IsVisiblePodaciStol" Width="700px" ShowCloseIcon="true">
+    <div class="col">
+        <h3>Vrsta stola: @vrstaStolaPodatak</h3>
+    </div>
+    <div class="col">
+        <h3>Cijena stola za mjesec: @cijenaStolaMjesecPodatak</h3>
+    </div>
+    <div class="col">
+        <h3>Cijena stola za godinu: @cijenaStolaGodinaPodatak</h3>
+    </div>
+    <div class="col">
+        <h3>Cijena stola za dan: @cijenaStolaDanPodatak</h3>
+    </div>
+    <Syncfusion.Blazor.Buttons.SfButton @onclick="OdustaniPodaci">Odustani </Syncfusion.Blazor.Buttons.SfButton>
+</Syncfusion.Blazor.Popups.SfDialog>
+
+<Syncfusion.Blazor.Popups.SfDialog Visible="IsVisibleRacun" Width="700px">
+    <EditForm Model="@racun" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label for="brand">Korisnik: </label>
+            <SfComboBox @bind-Value="racun.RacunKorisnik" TValue="int" TItem="Korisnik" Placeholder="Odaberite korisnika" DataSource="@korisnikList">
+                <ComboBoxFieldSettings Value="@nameof(Korisnik.Id)" Text="@nameof(Korisnik.ImePrezime)"></ComboBoxFieldSettings>
+            </SfComboBox>
+        </div>
+        <br />
+
+        <button type="submit" class="btn btn-primary">Spremi</button>
+    </EditForm>
+    <div class="row">
+        <div class="col-10">
+        </div>
+        <div class="col-2">
+            <button @onclick="OnClose" class="btn btn-outline-secondary">Odustani</button>
+        </div>
+    </div>
+</Syncfusion.Blazor.Popups.SfDialog>
+
+<SfToast ID="toast_default" @ref="ToastObjRedniBroj" Title="Upozorenje!" Content="@ToastContentRedniBroj" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjUspjesno" Title="Upozorenje!" Content="@ToastContentUspjesno" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+
+<style>
+    .e-custom-height {
+        height: 12vh !important;
+    }
+
+    .headerContainer {
+        height: 48px;
+        line-height: 48px;
+        background: rgb(2, 120, 215);
+        color: white;
+        margin-bottom: 3px;
+    }
+
+    #container .e-listview .e-content {
+        overflow: visible;
+        padding: 10px;
+    }
+
+    #container .e-listview {
+        overflow: visible;
+    }
+
+    #container .listview-container {
+        display: inline-block;
+        height: 300px;
+    }
+
+    .headerContainer .e-input-group {
+        margin-left: 20px;
+        width: 1200px;
+        background: white;
+        height: 31px;
+    }
+
+    .headerContainer #search {
+        height: 21px;
+        margin-left: 10px;
+    }
+
+    #listDialog .input_name {
+        margin-bottom: 20px;
+    }
+
+    .headerContainer #add,
+    .headerContainer #sort {
+        float: right;
+        margin-right: 15px;
+        margin-top: 7px;
+        background: white;
+        color: black
+    }
+
+    .headerContainer .e-input-search::before {
+        font-family: 'e-icons';
+        content: '\e961';
+        margin-top: 3px;
+    }
+
+    .headerContainer .e-input-group .e-input-search {
+        padding: 0 10px 0 10px;
+    }
+
+    .headerContainer .e-sort-icon-ascending::before {
+        content: '\e840';
+    }
+
+    .headerContainer .e-sort-icon-descending::before {
+        content: '\e83f';
+    }
+
+    .headerContainer .e-add-icon::before {
+        content: '\e823';
+    }
+
+    /* Crni okvir oko svakog polja u listview-u */
+    .list-item-container {
+        border: black solid thick !important;
+    }
+
+    /* Cijeli grid */
+    #container .e-listview {
+        box-shadow: 0 1px 4px #ddd;
+        border-bottom: 1px solid #ddd;
+        align-items: center;
+        text-align: center;
+        height: 500px;
+        width: 1070px !important;
+    }
+
+    #container .flex {
+        display: flex;
+        flex-direction: column;
+        width: 800px;
+        height: 400px;
+        margin: auto;
+    }
+
+    #container .e-listview .e-list-item {
+        height: 20px;
+        width: 65px;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        font-weight: bold;
+        float: left;
+        padding: 0;
+        margin-bottom: 10px;
+        border-width: 0px;
+    }
+
+        #container .e-listview .e-list-item .e-blazor-template {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            height: 100%;
+            text-align: center;
+        }
+
+        #container .e-listview .e-list-item .delete-icon {
+            font-size: 9px;
+            font-family: 'e-icons';
+        }
+
+    #container .e-listview .e-badge {
+        z-index: 10;
+        display: none;
+    }
+
+    #container .e-listview .e-hover .e-badge {
+        display: unset;
+    }
+
+    #container .e-listview .e-active .e-badge {
+        display: unset;
+        background-color: darkgrey;
+    }
+
+    #container .e-listview .e-list-item .delete-icon::before {
+        content: '\e7fc';
+        color: white;
+        align-items: center;
+        text-align: center;
+    }
+
+    .sample {
+        justify-content: center;
+        min-height: 280px;
+    }
+
+    .padding {
+        padding: 4px;
+    }
+
+    .flex {
+        display: flex;
+        align-items: center;
+        text-align: center;
+    }
+
+    .flex__center {
+        justify-content: center;
+    }
+
+    .margin {
+        margin: 10px;
+    }
+</style>
+
+@code {
+    @using Syncfusion.Blazor.Popups;
+    @using System;
+    @using System.Collections.Generic;
+    @using System.Linq;
+
+    public bool IsVisibleRacun { get; set; } = false;
+    public bool IsVisiblePodaciStol { get; set; } = false;
+
+    public SfGrid<Stol> StolDataGrid { get; set; }
+    public SfListView<Stol> SfListKatalog { get; set; }
+
+    private Stol stol = new Stol();
+    private Racun racun = new Racun();
+    private string ToastPosition = "Right";
+    private Stol stolSelectedItem { get; set; }
+
+    private async Task OnClose()
+    {
+        IsVisibleRacun = false;
+        racun.RacunKorisnik = 0;
+        racun.TipRacuna = "";
+    }
+
+    private AppDbContext context = new AppDbContext();
+
+    public List<Stol> stolasList { get; set; }
+    public List<VrstaStola> vrstaStolasList { get; set; }
+    public List<Korisnik> korisnikList { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        if (racun.RacunKorisnik == 0)
+        {
+            await ShowOnClickRedniBroj();
+        }
+        else
+        {
+            racun.Status = "AKTIVAN";
+            racun.TipRacuna = "DNEVNI";
+            racun.DatumRacuna = DateTime.Now;
+            context.Racun.Add(racun);
+
+            await context.SaveChangesAsync();
+
+            await ShowOnClickUspjesno();
+
+            IsVisibleRacun = false;
+            racun.RacunKorisnik = 0;
+            racun.TipRacuna = "";
+        }
+    }
+
+    public async Task OdustaniPodaci()
+    {
+        IsVisiblePodaciStol = false;
+    }
+
+    private async Task ShowOnClickUspjesno()
+    {
+        await this.ToastObjUspjesno.ShowAsync();
+    }
+
+    private async Task ShowOnClickRedniBroj()
+    {
+        await this.ToastObjRedniBroj.ShowAsync();
+    }
+
+    private SfToast ToastObjUspjesno;
+    private SfToast ToastObjRedniBroj;
+    private string ToastContentRedniBroj = "Potrebno je odabrati korisnika!";
+    private string ToastContentUspjesno = "Uspješan unos!";
+
+    private string vrstaKorisnika = null;
+    private int? idKorisnika = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        idKorisnika = await sessionStorage.GetItemAsync<int>("ID");
+        vrstaKorisnika = await context.Korisnik.Where(x => x.Id == idKorisnika).Select(x => x.VrstaKorisnika).FirstOrDefaultAsync();
+        stolasList = await PrikaziSve();
+        korisnikList = await PrikaziSveKorisnike();
+    }
+
+    public async Task<List<Stol>> PrikaziSve()
+    {
+        return await context.Stol.AsNoTracking().ToListAsync();
+    }
+
+    public async Task<List<Korisnik>> PrikaziSveKorisnike()
+    {
+        return await context.Korisnik.AsNoTracking().ToListAsync();
+    }
+
+    public string vrstaStolaPodatak { get; set; } = " ";
+    public string cijenaStolaMjesecPodatak { get; set; } = " ";
+    public string cijenaStolaGodinaPodatak { get; set; } = " ";
+    public string cijenaStolaDanPodatak { get; set; } = " ";
+
+    public async Task daj(Stol stol)
+    {
+        using (var newContext = new AppDbContext())
+        {
+            if (vrstaKorisnika == "KORISNIK")
+            {
+                vrstaStolaPodatak = await newContext.VrstaStola.Where(x => x.Id == stol.StolVrstaStola).Select(x => x.Naziv).FirstOrDefaultAsync();
+                cijenaStolaMjesecPodatak = (await newContext.VrstaStola.Where(x => x.Id == stol.StolVrstaStola).Select(x => x.CijenaMjesec).FirstOrDefaultAsync()).ToString();
+                cijenaStolaGodinaPodatak = (await newContext.VrstaStola.Where(x => x.Id == stol.StolVrstaStola).Select(x => x.CijenaGodina).FirstOrDefaultAsync()).ToString();
+                cijenaStolaDanPodatak = (await newContext.VrstaStola.Where(x => x.Id == stol.StolVrstaStola).Select(x => x.CijenaDan).FirstOrDefaultAsync()).ToString();
+
+                IsVisiblePodaciStol = true;
+            }
+            else
+            {
+                racun.RacunStol = stol.Id;
+                var iznos = await newContext.VrstaStola.Where(x => x.Id == stol.StolVrstaStola).Select(x => x.CijenaDan).FirstOrDefaultAsync();
+                racun.Iznos = iznos;
+                IsVisibleRacun = true;
+            }
+        }
+    }
+
+    private string GetStyle(Stol item)
+    {
+        using (var newContext = new AppDbContext())
+        {
+            var postojiUgovor =  newContext.Ugovor.Count(x => x.UgovorStol == item.Id && x.DatumIsteka >= DateTime.Now);
+            return postojiUgovor > 0
+                ? "background-color:red;font-size:14px;outline-color:black;outline-width:0px;box-shadow: inset 0px 0px 0px 2px rgb(6 1 1);"
+                : "background-color:green;font-size:14px;outline-color:black;outline-width:1px;box-shadow: inset 0px 0px 0px 2px rgb(6 1 1);";
+        }
+        
+    }
+}

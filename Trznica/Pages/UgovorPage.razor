@@ -1,0 +1,347 @@
+﻿@page "/Ugovor/{Value?}/{ValueTip?}"
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@using Microsoft.EntityFrameworkCore
+@using System.Text
+@using System.Security.Cryptography
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Drawing
+@using Syncfusion.Pdf
+@using Syncfusion.Pdf.Graphics
+@using Syncfusion.Pdf.Grid
+@using System.Data
+@using Trznica.Data
+@using Trznica.Models;
+@using Syncfusion.Blazor.Grids;
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Notifications
+
+
+<SfGrid @ref="UgovorDataGrid" DataSource="@ugovorsList" AllowPaging="true" Toolbar="@Toolbaritems" Height="100%">
+    <GridEvents OnToolbarClick="ToolbarClickHandler" RowSelected="args => ugovorSelectedItem = args.Data" TValue="Ugovor"></GridEvents>
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="EditMode.Normal"></GridEditSettings>
+    <GridColumns>
+        <GridColumn Field=@nameof(ugovor.Id) Visible="false" IsPrimaryKey="true"></GridColumn>
+        <GridColumn Field=@nameof(ugovor.DatumOdobrenja) HeaderText="Datum odobrenja"></GridColumn>
+        <GridColumn Field=@nameof(ugovor.TipUgovora) HeaderText="Tip ugovora"></GridColumn>
+        <GridColumn Field=@nameof(ugovor.Status) HeaderText="Status"></GridColumn>
+    </GridColumns>
+</SfGrid>
+
+<Syncfusion.Blazor.Popups.SfDialog Visible="IsVisibleStol" Width="700px">
+    <EditForm Model="@ugovor" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label for="brand">Korisnik: </label>
+            <SfComboBox @bind-Value="ugovor.UgovorKorsinik" TValue="int" TItem="Korisnik" Placeholder="Odaberite korisnika" DataSource="@vrstaStolasList">
+                <ComboBoxFieldSettings Value="@nameof(Korisnik.Id)" Text="@nameof(Korisnik.ImePrezime)"></ComboBoxFieldSettings>
+            </SfComboBox>
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="brand">Tip ugovor: </label>
+            <SfComboBox @bind-Value="ugovor.TipUgovora" TValue="string" TItem="string" Placeholder="Odaberite tip" DataSource="@tipUgovorList">
+            </SfComboBox>
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="brand">Datum isteka: </label>
+            <Syncfusion.Blazor.Calendars.SfDatePicker Enabled="false" @bind-Value="ugovor.DatumIsteka" TValue="DateTime?">
+            </Syncfusion.Blazor.Calendars.SfDatePicker>
+        </div>
+        <br />
+
+        <button type="submit" class="btn btn-primary">Spremi</button>
+    </EditForm>
+    <div class="row">
+        <div class="col-10">
+        </div>
+        <div class="col-2">
+            <button @onclick="OnClose" class="btn btn-outline-secondary">Odustani</button>
+        </div>
+    </div>
+</Syncfusion.Blazor.Popups.SfDialog>
+
+<Syncfusion.Blazor.Popups.SfDialog Visible="IsVisibleStolEdit" Width="700px">
+    <EditForm Model="@ugovor" OnValidSubmit="HandleValidSubmitEdit">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label for="brand">Korisnik: </label>
+            <SfComboBox @bind-Value="ugovor.UgovorKorsinik" TValue="int" TItem="Korisnik" Placeholder="Odaberite korisnika" DataSource="@vrstaStolasList">
+                <ComboBoxFieldSettings Value="@nameof(Korisnik.Id)" Text="@nameof(Korisnik.ImePrezime)"></ComboBoxFieldSettings>
+            </SfComboBox>
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="brand">Tip ugovor: </label>
+            <SfComboBox @bind-Value="ugovor.TipUgovora" TValue="string" TItem="string" Placeholder="Odaberite tip" DataSource="@tipUgovorList">
+            </SfComboBox>
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="brand">Datum isteka: </label>
+            <Syncfusion.Blazor.Calendars.SfDatePicker Enabled="false" @bind-Value="ugovor.DatumIsteka" TValue="DateTime?">
+            </Syncfusion.Blazor.Calendars.SfDatePicker>
+        </div>
+        <br />
+        <div class="row">
+            <div class="col-2">
+                <button type="submit" class="btn btn-primary">Spremi</button>
+            </div>
+
+        </div>
+
+    </EditForm>
+    <div class="row">
+        <div class="col-10">
+        </div>
+        <div class="col-2">
+            <button @onclick="OnClose" class="btn btn-outline-secondary">Odustani</button>
+        </div>
+    </div>
+
+</Syncfusion.Blazor.Popups.SfDialog>
+
+<SfToast ID="toast_default" @ref="ToastObjRedniBroj" Title="Upozorenje!" Content="@ToastContentRedniBroj" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjUspjesno" Title="Upozorenje!" Content="@ToastContentUspjesno" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+
+@code {
+    @using Syncfusion.Blazor.Popups;
+    @using System;
+    @using System.Collections.Generic;
+    @using System.Linq;
+    @using System.IO;
+    @using Bunit
+    @using Bunit.TestDoubles
+
+    @inject Microsoft.JSInterop.IJSRuntime JS
+    [Parameter]
+    public string Value { get; set; }
+    [Parameter]
+    public string ValueTip { get; set; }
+    public SfGrid<Ugovor> UgovorDataGrid { get; set; }
+
+    private Ugovor ugovor = new Ugovor();
+
+    private Ugovor ugovorSelectedItem { get; set; }
+
+    private List<Object> Toolbaritems = new List<Object>() {  new ItemModel() { Text = "Uredi", TooltipText = "Uredi", PrefixIcon = "e-edit", Id = "Uredi" }, new ItemModel() { Text = "Izbriši", TooltipText = "Izbriši", PrefixIcon = "e-edit", Id = "Izbrisi" }, new ItemModel() { Text = "Kreiraj izvještaj", TooltipText = "Kreiraj izvještaj o ugovorima", PrefixIcon = "e-edit", Id = "Izvjestaj" } };
+
+    AppDbContext context = new AppDbContext();
+
+    public bool IsVisibleStol { get; set; }
+    public bool IsVisibleStolEdit { get; set; }
+
+    public List<Ugovor> ugovorsList { get; set; }
+    public List<Korisnik> vrstaStolasList { get; set; }
+    public List<string> tipUgovorList = new List<string> { "MJESEČNI", "GODIŠNJI" };
+
+    string vrstaKorisnika = null;
+    int? idKorisnika = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        idKorisnika = await sessionStorage.GetItemAsync<int>("ID");
+        vrstaKorisnika = await context.Korisnik.Where(x => x.Id == idKorisnika).Select(x => x.VrstaKorisnika).FirstOrDefaultAsync();
+        ugovorsList = await PrikaziSve();
+        vrstaStolasList = await PrikaziSveVrste();
+    }
+
+
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Text == "Dodaj")
+        {
+            if (Value != null)
+            {
+                ugovor.UgovorKorsinik = Int32.Parse(Value);
+            }
+            if (ValueTip != null)
+            {
+                ugovor.TipUgovora = ValueTip;
+                if (ValueTip == "MJESEČNI")
+                {
+                    ugovor.DatumIsteka = DateTime.Now.AddDays(30);    
+                }
+                if(ValueTip == "GODIŠNJI")
+                {
+                    ugovor.DatumIsteka = DateTime.Now.AddDays(365);
+                }
+            }
+            
+            IsVisibleStol = true;
+        }
+        else if (args.Item.Text == "Uredi")
+        {
+            ugovor = ugovorSelectedItem;
+            IsVisibleStolEdit = true;
+        }
+        else if (args.Item.Text == "Izbriši")
+        {
+            var stolEdit = await context.Ugovor.Where(x => x.Id == ugovorSelectedItem.Id).FirstOrDefaultAsync();
+
+            context.Ugovor.Remove(stolEdit);
+            await context.SaveChangesAsync();
+            ugovorsList = await PrikaziSve();
+            await UgovorDataGrid.Refresh();
+        }
+        else if (args.Item.Text == "Kreiraj izvještaj")
+        {
+            await ExportToPdf();
+        }
+    }
+    public async Task<List<Ugovor>> PrikaziSve()
+    {
+        if (vrstaKorisnika == "KORISNIK")
+        {
+            return await context.Ugovor.Where(x => x.UgovorKorsinik == idKorisnika).ToListAsync();
+        }
+        else
+        {
+            return await context.Ugovor.AsNoTracking().ToListAsync();
+        }
+        
+    }
+    public async Task<List<Korisnik>> PrikaziSveVrste()
+    {
+        return await context.Korisnik.AsNoTracking().ToListAsync();
+    }
+    private async Task HandleValidSubmit()
+    {
+        ugovor.UgovorKorsinik = Int32.Parse(Value);
+        if (ugovor.UgovorKorsinik == 0)
+        {
+            ShowOnClickRedniBroj();
+        }
+        else
+        {
+            ugovor.Status = "AKTIVAN";
+            ugovor.DatumOdobrenja = DateTime.Now;
+            context.Ugovor.Add(ugovor);
+
+            await context.SaveChangesAsync();
+
+            await ShowOnClickUspjesno();
+
+            ugovorsList = await PrikaziSve();
+
+            IsVisibleStol = false;
+
+            ugovor.UgovorKorsinik = 0;
+            ugovor.TipUgovora = "";
+
+
+            await UgovorDataGrid.Refresh();
+        }
+
+
+
+
+    }
+
+    private async Task OnClose()
+    {
+        IsVisibleStol = false;
+        IsVisibleStolEdit = false;
+        ugovor.UgovorKorsinik = 0;
+        ugovor.TipUgovora = "";
+    }
+
+    private async Task HandleValidSubmitEdit()
+    {
+        if (ugovor.UgovorKorsinik == 0)
+        {
+            ShowOnClickRedniBroj();
+        }
+            else
+            {
+                var stolaEdit = await context.Ugovor.Where(x => x.Id == ugovorSelectedItem.Id).FirstOrDefaultAsync();
+            ugovor.DatumOdobrenja = DateTime.Now;
+                context.Ugovor.Update(stolaEdit);
+
+                await context.SaveChangesAsync();
+
+                await ShowOnClickUspjesno();
+
+                ugovorsList = await PrikaziSve();
+
+                IsVisibleStolEdit = false;
+            ugovor.UgovorKorsinik = 0;
+            ugovor.TipUgovora = "";
+                await UgovorDataGrid.Refresh();
+            }
+        
+
+    }
+
+    private async Task ShowOnClickRedniBroj()
+    {
+        await this.ToastObjRedniBroj.ShowAsync();
+    }
+
+    SfToast ToastObjUspjesno;
+    SfToast ToastObjRedniBroj;
+    SfToast ToastObjOpis;
+    private async Task ShowOnClickUspjesno()
+    {
+        await this.ToastObjUspjesno.ShowAsync();
+    }
+    private string ToastPosition = "Right";
+    private string ToastContentUspjesno = "Uspješan unos!";
+    private string ToastContentRedniBroj = "Potebno je odabrati korisnika!";
+    private string ToastContentOpis = "Potebno je unijeti opis!";
+
+    DataTable dataTable = new DataTable();
+
+    public async Task ExportToPdf()
+    {
+        // Ensure columns are added before adding rows
+        if (dataTable.Columns.Count == 0)
+        {
+            dataTable.Columns.Add("Tip ugovora");
+            dataTable.Columns.Add("Datum odobrenja");
+            dataTable.Columns.Add("Korisnik");
+            dataTable.Columns.Add("Datum isteka");
+        }
+
+        // Clear existing rows to avoid duplicates
+        dataTable.Rows.Clear();
+
+        foreach (var item in ugovorsList)
+        {
+            var korisnik = await context.Korisnik.Where(x => x.Id == item.UgovorKorsinik).Select(x => x.ImePrezime).FirstOrDefaultAsync();
+            dataTable.Rows.Add(new object[] { item.TipUgovora, item.DatumOdobrenja.ToString() , korisnik, item.DatumIsteka.ToString()});
+        }
+
+        int paragraphAfterSpacing = 8;
+        int cellMargin = 8;
+
+        PdfDocument pdfDocument = new PdfDocument();
+        PdfPage page = pdfDocument.Pages.Add();
+        PdfStandardFont font = new PdfStandardFont(PdfFontFamily.TimesRoman, 16);
+        PdfTextElement title = new PdfTextElement("Ugovori", font, PdfBrushes.Black);
+        PdfLayoutResult result = title.Draw(page, new PointF(0, 0));
+        PdfStandardFont contentFont = new PdfStandardFont(PdfFontFamily.TimesRoman, 12);
+        PdfTextElement content = new PdfTextElement("Ugovori za godinu 2024.", contentFont, PdfBrushes.Black);
+        PdfLayoutFormat format = new PdfLayoutFormat { Layout = PdfLayoutType.Paginate };
+        result = content.Draw(page, new RectangleF(0, result.Bounds.Bottom + paragraphAfterSpacing, page.GetClientSize().Width, page.GetClientSize().Height), format);
+
+        PdfGrid pdfGrid = new PdfGrid
+            {
+                Style = { CellPadding = { Left = cellMargin, Right = cellMargin } }
+            };
+        pdfGrid.ApplyBuiltinStyle(PdfGridBuiltinStyle.GridTable4Accent1);
+        pdfGrid.DataSource = dataTable;
+        pdfGrid.Style.Font = contentFont;
+        pdfGrid.Draw(page, new Syncfusion.Drawing.PointF(0, result.Bounds.Bottom + paragraphAfterSpacing));
+
+        MemoryStream memoryStream = new MemoryStream();
+        pdfDocument.Save(memoryStream);
+        JS.SaveAs("Ugovori.pdf", memoryStream.ToArray());
+    }
+
+}

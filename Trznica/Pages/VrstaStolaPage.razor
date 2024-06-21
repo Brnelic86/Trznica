@@ -1,0 +1,400 @@
+﻿
+
+@page "/vrstaStola"
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@using Microsoft.EntityFrameworkCore
+@using System.Text
+@using System.Security.Cryptography
+@using Syncfusion.Blazor.Navigations
+@using System.Data
+@using Trznica.Data
+@using Trznica.Models;
+@using Syncfusion.Blazor.Grids;
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Notifications
+
+@if(vrstaKorisnika == "KORISNIK")
+{
+    <h3>Nemate dozvolu za određenu akciju!</h3>
+}
+else
+{
+
+<SfGrid @ref="vrstaStolaDataGrid" DataSource="@vrstaStolasList" AllowPaging="true" Toolbar="@Toolbaritems" Height="100%">
+    <GridEvents OnToolbarClick="ToolbarClickHandler" RowSelected="args => vrstaStolaSelectedItem = args.Data" TValue="VrstaStola"></GridEvents>
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="EditMode.Normal"></GridEditSettings>
+    <GridColumns>
+        <GridColumn Field=@nameof(vrstaStola.Id) Visible="false" IsPrimaryKey="true"></GridColumn>
+        <GridColumn Field=@nameof(vrstaStola.Naziv) HeaderText="Naziv"></GridColumn>
+        <GridColumn Field=@nameof(vrstaStola.Opis) HeaderText="Opis"></GridColumn>
+        <GridColumn Field=@nameof(vrstaStola.CijenaDan) HeaderText="Cijena dan"></GridColumn>
+        <GridColumn Field=@nameof(vrstaStola.CijenaGodina ) HeaderText="Cijena godina"></GridColumn>
+        <GridColumn Field=@nameof(vrstaStola.CijenaMjesec) HeaderText="Cijena mjesec"></GridColumn>
+        
+    </GridColumns>
+</SfGrid> 
+}
+<Syncfusion.Blazor.Popups.SfDialog Visible="IsVisibleVrstaStola" Width="700px">
+    <EditForm Model="@vrstaStola" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label for="brand">Naziv: </label>
+        <InputText id="brand" @bind-Value="vrstaStola.Naziv" class="form-control" />
+        <ValidationMessage For="@(() => vrstaStola.Naziv)" />
+    </div>
+    <br />
+    <div class="form-group">
+        <label for="year">Opis: </label>
+        <InputText id="year" @bind-Value="vrstaStola.Opis" class="form-control" />
+        <ValidationMessage For="@(() => vrstaStola.Opis)" />
+    </div>
+        <br />
+        <div class="form-group">
+            <label for="brand">Cijena dan: </label>
+            <InputNumber TValue="decimal" id="brand" @bind-Value="vrstaStola.CijenaDan" class="form-control" />
+            <ValidationMessage For="@(() => vrstaStola.CijenaDan)" />
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="year">Cijena mjesec: </label>
+            <InputNumber TValue="decimal" id="year" @bind-Value="vrstaStola.CijenaMjesec" class="form-control" />
+            <ValidationMessage For="@(() => vrstaStola.CijenaMjesec)" />
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="year">Cijena godina: </label>
+            <InputNumber TValue="decimal" id="year" @bind-Value="vrstaStola.CijenaGodina" class="form-control" />
+            <ValidationMessage For="@(() => vrstaStola.CijenaGodina)" />
+        </div>
+        <br />
+
+        <button type="submit" class="btn btn-primary">Spremi</button>
+    </EditForm>
+    <div class="row">
+        <div class="col-10">
+        </div>
+        <div class="col-2">
+            <button @onclick="OnClose" class="btn btn-outline-secondary">Odustani</button>
+        </div>
+    </div>
+</Syncfusion.Blazor.Popups.SfDialog>
+
+<Syncfusion.Blazor.Popups.SfDialog Visible="IsVisibleVrstaStolaEdit" Width="700px" >
+    <EditForm Model="@vrstaStola" OnValidSubmit="HandleValidSubmitEdit">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label for="brand">Naziv: </label>
+            <InputText id="brand" @bind-Value="vrstaStola.Naziv" class="form-control" />
+            <ValidationMessage For="@(() => vrstaStola.Naziv)" />
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="year">Opis: </label>
+            <InputText id="year" @bind-Value="vrstaStola.Opis" class="form-control" />
+            <ValidationMessage For="@(() => vrstaStola.Opis)" />
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="brand">Cijena dan: </label>
+            <InputNumber TValue="decimal" id="brand" @bind-Value="vrstaStola.CijenaDan" class="form-control" />
+            <ValidationMessage For="@(() => vrstaStola.CijenaDan)" />
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="year">Cijena mjesec: </label>
+            <InputNumber TValue="decimal" id="year" @bind-Value="vrstaStola.CijenaMjesec" class="form-control" />
+            <ValidationMessage For="@(() => vrstaStola.CijenaMjesec)" />
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="year">Cijena godina: </label>
+            <InputNumber TValue="decimal" id="year" @bind-Value="vrstaStola.CijenaGodina" class="form-control" />
+            <ValidationMessage For="@(() => vrstaStola.CijenaGodina)" />
+        </div>
+        <br />
+        <div class="row">
+            <div class="col-2">
+                <button type="submit" class="btn btn-primary">Spremi</button>
+            </div>
+            
+        </div>
+        
+    </EditForm>
+    <div class="row">
+        <div class="col-10">
+
+        </div>
+        <div class="col-2">
+            <button @onclick="OnClose" class="btn btn-outline-secondary">Odustani</button>
+        </div>
+    </div>
+    
+</Syncfusion.Blazor.Popups.SfDialog>
+
+<SfToast ID="toast_default" @ref="ToastObjUspjesno" Title="Upozorenje!" Content="@ToastContentUspjesno" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjNaziv" Title="Upozorenje!" Content="@ToastContentNaziv" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjOpis" Title="Upozorenje!" Content="@ToastContentOpis" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjCijenaDan" Title="Upozorenje!" Content="@ToastContentCijenaDan" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjCijenaMjesec" Title="Upozorenje!" Content="@ToastContentCijenaMjesec" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjCijenaGodina" Title="Upozorenje!" Content="@ToastContentCijenaGodina" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjPostojiStol" Title="Upozorenje!" Content="@ToastContentPostojiStol" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+ 
+
+@functions {
+    
+}
+
+@code {
+    @using Syncfusion.Blazor.Popups;
+    @using System;
+    @using System.Collections.Generic;
+    @using System.Linq;
+    @using Syncfusion.Pdf;
+@using Syncfusion.Pdf.Graphics;
+@using Syncfusion.Pdf.Grid;
+@using Syncfusion.Drawing;
+    @using Syncfusion.Pdf
+    @using Syncfusion.Pdf.Grid;
+    @using Syncfusion.Drawing;
+    @using Syncfusion.Pdf.Graphics;
+    @inject Microsoft.JSInterop.IJSRuntime JS
+
+    @using System.IO;
+
+    @inject Microsoft.JSInterop.IJSRuntime JS
+
+    @using System.IO;
+
+    public SfGrid<VrstaStola> vrstaStolaDataGrid{ get; set; }
+
+    private VrstaStola vrstaStola = new VrstaStola();
+
+    private VrstaStola vrstaStolaSelectedItem{ get; set; }
+
+    private List<Object> Toolbaritems = new List<Object>() { new ItemModel() { Text = "Dodaj", TooltipText = "Dodaj", PrefixIcon = "e-plus", Id = "Dodaj" }, new ItemModel() { Text = "Uredi", TooltipText = "Uredi", PrefixIcon = "e-edit", Id = "Uredi" }, new ItemModel() { Text = "Izbriši", TooltipText = "Izbriši", PrefixIcon = "e-edit", Id = "Izbrisi" } };
+
+    AppDbContext context = new AppDbContext();
+
+    public bool IsVisibleVrstaStola{ get; set; }
+    public bool IsVisibleVrstaStolaEdit{ get; set; }
+
+    public List<VrstaStola> vrstaStolasList { get; set; }
+
+    string vrstaKorisnika = null;
+    int? idKorisnika = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        idKorisnika = await sessionStorage.GetItemAsync<int>("ID");
+        vrstaKorisnika = await context.Korisnik.Where(x => x.Id == idKorisnika).Select(x => x.VrstaKorisnika).FirstOrDefaultAsync();
+        vrstaStolasList = await PrikaziSve();
+    }
+
+
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Text == "Dodaj")
+        {
+            IsVisibleVrstaStola = true;
+        }
+        else if (args.Item.Text == "Uredi")
+        {
+            vrstaStola = vrstaStolaSelectedItem;
+            IsVisibleVrstaStolaEdit = true;
+        }
+        else if(args.Item.Text == "Izbriši")
+        {
+            var vrstsStolaEdit = await context.VrstaStola.Where(x => x.Id == vrstaStolaSelectedItem.Id).FirstOrDefaultAsync();
+
+            var postojiStol = await context.Stol.CountAsync(x => x.StolVrstaStola == vrstsStolaEdit.Id);
+
+            if (postojiStol > 0)
+            {
+                await ShowOnClickPostojiStol();
+            }
+            else
+            {
+                context.VrstaStola.Remove(vrstsStolaEdit);
+                await context.SaveChangesAsync();
+                vrstaStolasList = await PrikaziSve();
+                await vrstaStolaDataGrid.Refresh();
+            }
+
+        }
+    }
+    public async Task<List<VrstaStola>> PrikaziSve()
+    {
+        return await context.VrstaStola.AsNoTracking().ToListAsync();
+    }
+    private async Task HandleValidSubmit()
+    {
+        if (String.IsNullOrWhiteSpace(vrstaStola.Naziv))
+        {
+            ShowOnClickNaziv();
+        }
+        else if (String.IsNullOrWhiteSpace(vrstaStola.Opis))
+        {
+            ShowOnClickOpis();
+        }
+        else if (vrstaStola.CijenaDan <= 0)
+        {
+            ShowOnClickCijenaDan();
+        }
+        else if (vrstaStola.CijenaMjesec <= 0)
+        {
+            ShowOnClickCijenaMjesec();
+        }
+        else if (vrstaStola.CijenaGodina <= 0)
+        {
+            ShowOnClickCijenaGodina();
+        }
+        else
+        {
+            // Ensure vrstaStola.Id is not set manually
+            context.VrstaStola.Add(vrstaStola);
+
+            await context.SaveChangesAsync();
+
+            await ShowOnClickUspjesno();
+
+            vrstaStolasList = await PrikaziSve();
+
+            IsVisibleVrstaStola = false;
+
+            vrstaStola.Naziv = "";
+            vrstaStola.Opis = "";
+            vrstaStola.CijenaDan = 0;
+            vrstaStola.CijenaMjesec = 0;
+            vrstaStola.CijenaGodina = 0;
+
+            await vrstaStolaDataGrid.Refresh();
+        }
+    }
+
+
+    private async Task OnClose()
+    {
+        IsVisibleVrstaStola = false;
+        IsVisibleVrstaStolaEdit = false;
+        vrstaStola.Naziv = "";
+        vrstaStola.Opis = "";
+        vrstaStola.CijenaDan = 0;
+        vrstaStola.CijenaMjesec = 0;
+        vrstaStola.CijenaGodina = 0;
+        await vrstaStolaDataGrid.ExportToPdfAsync();
+    }
+
+    private async Task HandleValidSubmitEdit()
+    {
+
+        if (String.IsNullOrWhiteSpace(vrstaStola.Naziv))
+        {
+            ShowOnClickNaziv();
+        }
+        else if (String.IsNullOrWhiteSpace(vrstaStola.Opis))
+        {
+            ShowOnClickOpis();
+        }
+        else if (vrstaStola.CijenaDan <= 0)
+        {
+            ShowOnClickCijenaDan();
+        }
+        else if (vrstaStola.CijenaMjesec <= 0)
+        {
+            ShowOnClickCijenaMjesec();
+        }
+        else if (vrstaStola.CijenaGodina <= 0)
+        {
+            ShowOnClickCijenaGodina();
+        }
+        else
+        {
+            var vrstsStolaEdit = await context.VrstaStola.Where(x => x.Id == vrstaStolaSelectedItem.Id).FirstOrDefaultAsync();
+
+            vrstsStolaEdit.Naziv = vrstaStola.Naziv;
+            vrstsStolaEdit.Opis = vrstaStola.Opis;
+            vrstsStolaEdit.CijenaDan = vrstaStola.CijenaDan;
+            vrstsStolaEdit.CijenaMjesec = vrstaStola.CijenaMjesec;
+            vrstsStolaEdit.CijenaGodina = vrstaStola.CijenaGodina;
+            context.VrstaStola.Update(vrstsStolaEdit);
+
+            await context.SaveChangesAsync();
+
+            await ShowOnClickUspjesno();
+
+            vrstaStolasList = await PrikaziSve();
+
+            IsVisibleVrstaStolaEdit = false;
+            vrstaStola.Naziv = "";
+            vrstaStola.Opis = "";
+            vrstaStola.CijenaDan = 0;
+            vrstaStola.CijenaMjesec = 0;
+            vrstaStola.CijenaGodina = 0;
+            vrstaStola = null;
+            await vrstaStolaDataGrid.Refresh();
+        }
+
+    }
+
+    SfToast ToastObjUspjesno;
+    SfToast ToastObjNaziv;
+    SfToast ToastObjOpis;
+    SfToast ToastObjCijenaDan;
+    SfToast ToastObjCijenaMjesec;
+    SfToast ToastObjCijenaGodina;
+    SfToast ToastObjPostojiStol;
+    private async Task ShowOnClickUspjesno()
+    {
+        await this.ToastObjUspjesno.ShowAsync();
+    }
+    private async Task ShowOnClickNaziv()
+    {
+        await this.ToastObjNaziv.ShowAsync();
+    }
+    private async Task ShowOnClickOpis()
+    {
+        await this.ToastObjOpis.ShowAsync();
+    }
+    private async Task ShowOnClickCijenaDan()
+    {
+        await this.ToastObjCijenaDan.ShowAsync();
+    }
+    private async Task ShowOnClickCijenaMjesec()
+    {
+        await this.ToastObjCijenaMjesec.ShowAsync();
+    }
+    private async Task ShowOnClickCijenaGodina()
+    {
+        await this.ToastObjCijenaGodina.ShowAsync();
+    }
+    private async Task ShowOnClickPostojiStol()
+    {
+        await this.ToastObjPostojiStol.ShowAsync();
+    }
+
+    private string ToastPosition = "Right";
+    private string ToastContentUspjesno = "Uspješan unos!";
+    private string ToastContentNaziv = "Potebno je unijeti naziv!";
+    private string ToastContentOpis = "Potebno je unijeti opis!";
+    private string ToastContentCijenaDan = "Potebno je unijeti cijenu za dan!";
+    private string ToastContentCijenaMjesec = "Potebno je unijeti cijenu za mjesec!";
+    private string ToastContentCijenaGodina = "Potebno je unijeti cijenu za godinu!";
+    private string ToastContentPostojiStol = "Nemoguće je izbrisati vrstu stola, jer je nju vezan stol!";
+
+    
+
+}

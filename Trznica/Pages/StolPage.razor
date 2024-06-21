@@ -1,0 +1,501 @@
+﻿@page "/Stol"
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@using Microsoft.EntityFrameworkCore
+@using System.Text
+@using System.Security.Cryptography
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Lists
+@using Syncfusion.Blazor.Navigations
+@using Trznica.Data
+@using Trznica.Models;
+@using Syncfusion.Blazor.Grids;
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Notifications
+
+@if (vrstaKorisnika == "KORISNIK")
+{
+    <h3>Nemate dozvolu za određenu akciju!</h3>
+}
+else{
+
+<SfGrid @ref="StolDataGrid" DataSource="@stolasList" AllowPaging="true" Toolbar="@Toolbaritems" Height="100%">
+    <GridEvents OnToolbarClick="ToolbarClickHandler" RowSelected="args => stolSelectedItem = args.Data" TValue="Stol"></GridEvents>
+    <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="EditMode.Normal"></GridEditSettings>
+    <GridColumns>
+        <GridColumn Field=@nameof(stol.Id) Visible="false" IsPrimaryKey="true"></GridColumn>
+        <GridColumn Field=@nameof(stol.RedniBroj) HeaderText="Redni broj"></GridColumn>
+        <GridColumn Field=@nameof(stol.Status) HeaderText="Status"></GridColumn>
+
+    </GridColumns>
+</SfGrid>
+}
+
+
+<Syncfusion.Blazor.Popups.SfDialog Visible="IsVisibleStol" Width="700px">
+    <EditForm Model="@stol" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        
+        <div class="form-group">
+            <label for="brand">Vrsta stola: </label>
+            <SfComboBox TValue="int" @bind-Value="stol.StolVrstaStola" TItem="VrstaStola" Placeholder="Odaberite vrstu stola" DataSource="@vrstaStolasList">
+                <ComboBoxFieldSettings Value="@nameof(VrstaStola.Id)" Text="@nameof(VrstaStola.Naziv)"></ComboBoxFieldSettings>
+            </SfComboBox>
+        </div>
+        <br />
+
+        <button type="submit" class="btn btn-primary">Spremi</button>
+    </EditForm>
+    <div class="row">
+        <div class="col-10">
+        </div>
+        <div class="col-2">
+            <button @onclick="OnClose" class="btn btn-outline-secondary">Odustani</button>
+        </div>
+    </div>
+</Syncfusion.Blazor.Popups.SfDialog>
+
+<Syncfusion.Blazor.Popups.SfDialog Visible="IsVisibleStolEdit" Width="700px">
+    <EditForm Model="@stol" OnValidSubmit="HandleValidSubmitEdit">
+        <DataAnnotationsValidator />
+        
+        <div class="form-group">
+            <label for="brand">Vrsta stola: </label>
+            <SfComboBox @bind-Value="stol.StolVrstaStola" TValue="int" TItem="VrstaStola" Placeholder="Odaberite vrstu stola" DataSource="@vrstaStolasList">
+    <ComboBoxFieldSettings Value="@nameof(VrstaStola.Id)" Text="@nameof(VrstaStola.Naziv)"></ComboBoxFieldSettings>
+</SfComboBox>
+        </div>
+        <br />
+        <div class="row">
+            <div class="col-2">
+                <button type="submit" class="btn btn-primary">Spremi</button>
+            </div>
+
+        </div>
+
+    </EditForm>
+    <div class="row">
+        <div class="col-10">
+        </div>
+        <div class="col-2">
+            <button @onclick="OnClose" class="btn btn-outline-secondary">Odustani</button>
+        </div>
+    </div>
+
+</Syncfusion.Blazor.Popups.SfDialog>
+
+<SfToast ID="toast_default" @ref="ToastObjRedniBroj" Title="Upozorenje!" Content="@ToastContentRedniBroj" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+
+<SfToast ID="toast_default" @ref="ToastObjVrstaStola" Title="Upozorenje!" Content="@ToastContentVrstaStola" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjUspjesno" Title="Upozorenje!" Content="@ToastContentUspjesno" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjPostojiUgovor" Title="Upozorenje!" Content="@ToastContentPostojiUgovor" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjPostojiZahtjevUgovor" Title="Upozorenje!" Content="@ToastContentPostojiZahtjevUgovor" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjPostojiRacun" Title="Upozorenje!" Content="@ToastContentPostojiRacun" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+
+<style>
+
+
+    .e-custom-height {
+        height: 12vh !important;
+    }
+
+    .headerContainer {
+        height: 48px;
+        line-height: 48px;
+        background: rgb(2, 120, 215);
+        color: white;
+        margin-bottom: 3px;
+    }
+
+    #container .e-listview .e-content {
+        overflow: visible;
+        padding: 10px;
+    }
+
+    #container .e-listview {
+        overflow: visible;
+    }
+
+    #container .listview-container {
+        display: inline-block;
+        height: 300px;
+    }
+
+    .headerContainer .e-input-group {
+        margin-left: 20px;
+        width: 200px;
+        background: white;
+        height: 31px;
+    }
+
+    .headerContainer #search {
+        height: 21px;
+        margin-left: 10px;
+    }
+
+    #listDialog .input_name {
+        margin-bottom: 20px;
+    }
+
+    .headerContainer #add,
+    .headerContainer #sort {
+        float: right;
+        margin-right: 15px;
+        margin-top: 7px;
+        background: white;
+        color: black
+    }
+
+    .headerContainer .e-input-search::before {
+        font-family: 'e-icons';
+        content: '\e961';
+        margin-top: 3px;
+    }
+
+    .headerContainer .e-input-group .e-input-search {
+        padding: 0 10px 0 10px;
+    }
+
+    .headerContainer .e-sort-icon-ascending::before {
+        content: '\e840';
+    }
+
+    .headerContainer .e-sort-icon-descending::before {
+        content: '\e83f';
+    }
+
+    .headerContainer .e-add-icon::before {
+        content: '\e823';
+    }
+</style>
+<style>
+    /*cijeli grid*/
+    #container .e-listview {
+        box-shadow: 0 1px 4px #ddd;
+        border-bottom: 1px solid #ddd;
+        align-items: center;
+        text-align: center;
+        text-size-adjust: 50px;
+        height: 500px;
+        width: 1070px;
+        /*overflow: scroll;*/
+    }
+
+    #container .flex {
+        display: flex;
+        flex-direction: column;
+        width: 800px;
+        height: 400px;
+        margin: auto;
+    }
+
+    #container .e-listview .e-list-item {
+        height: 20px;
+        width: 65px;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        font-weight: bold;
+        float: left;
+        padding: 0;
+        text-size-adjust: 50px;
+        margin-bottom: 10px;
+        border-width: 0px;
+        /*border-width: 1px;*/
+    }
+
+        #container .e-listview .e-list-item .e-blazor-template {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            height: 100%;
+            text-align: center;
+            text-size-adjust: 50px;
+        }
+
+        #container .e-listview .e-list-item .delete-icon {
+            font-size: 9px;
+            font-family: 'e-icons';
+        }
+
+    #container .e-listview .e-badge {
+        z-index: 10;
+        display: none;
+    }
+
+    #container .e-listview .e-hover .e-badge {
+        display: unset;
+    }
+
+    #container .e-listview .e-active .e-badge {
+        display: unset;
+        background-color: darkgrey;
+    }
+
+    #container .e-listview .e-list-item .delete-icon::before {
+        content: '\e7fc';
+        color: white;
+        align-items: center;
+        text-align: center;
+        text-size-adjust: 50px;
+    }
+
+    .sample {
+        justify-content: center;
+        min-height: 280px;
+    }
+
+    .padding {
+        padding: 4px;
+    }
+
+    .flex {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        text-size-adjust: 50px;
+    }
+
+    .flex__center {
+        justify-content: center;
+    }
+
+    .margin {
+        margin: 10px;
+    }
+</style>
+@code {
+    @using Syncfusion.Blazor.Popups;
+    @using System;
+    @using System.Collections.Generic;
+    @using System.Linq;
+
+    private bool needsRefresh = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (needsRefresh)
+        {
+            needsRefresh = false; // Reset the flag
+            await StolDataGrid.Refresh();
+        }
+    }
+
+    public SfGrid<Stol> StolDataGrid { get; set; }
+    public SfListView<Stol> SfListKatalog{ get; set; }
+
+    private Stol stol = new Stol();
+
+    private Stol stolSelectedItem { get; set; }
+
+    private List<Object> Toolbaritems = new List<Object>() { new ItemModel() { Text = "Dodaj", TooltipText = "Dodaj", PrefixIcon = "e-plus", Id = "Dodaj" }, new ItemModel() { Text = "Uredi", TooltipText = "Uredi", PrefixIcon = "e-edit", Id = "Uredi" }, new ItemModel() { Text = "Izbriši", TooltipText = "Izbriši", PrefixIcon = "e-edit", Id = "Izbrisi" } };
+
+    AppDbContext context = new AppDbContext();
+
+    public bool IsVisibleStol { get; set; }
+    public bool IsVisibleStolEdit { get; set; }
+
+    public List<Stol> stolasList { get; set; }
+    public List<VrstaStola> vrstaStolasList { get; set; }
+    public List<string> statusStolovaList = new List<string> { "ZAUZET", "SLOBODAN" };
+
+    string vrstaKorisnika = null;
+    int? idKorisnika = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        idKorisnika = await sessionStorage.GetItemAsync<int>("ID");
+        vrstaKorisnika = await context.Korisnik.Where(x => x.Id == idKorisnika).Select(x => x.VrstaKorisnika).FirstOrDefaultAsync();
+        stolasList = await PrikaziSve();
+        vrstaStolasList = await PrikaziSveVrste();
+    }
+
+
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Text == "Dodaj")
+        {
+            IsVisibleStol = true;
+        }
+        else if (args.Item.Text == "Uredi")
+        {
+            stol = stolSelectedItem;
+            IsVisibleStolEdit = true;
+        }
+        else if (args.Item.Text == "Izbriši")
+        {
+            var stolEdit = await context.Stol.Where(x => x.Id == stolSelectedItem.Id).FirstOrDefaultAsync();
+
+            var postojiUgovor = await context.Ugovor.CountAsync(x => x.UgovorStol == stolEdit.Id);
+            var postojiZahtjevUgovor = await context.ZahtjevUgovor.CountAsync(x => x.ZahtjevUgovorStol == stolEdit.Id);
+            var postojiRacun = await context.Racun.CountAsync(x => x.RacunStol == stolEdit.Id);
+
+            if (postojiUgovor > 0)
+            {
+                await ShowOnClickPostojiUgovor();
+            }
+            else if (postojiZahtjevUgovor > 0)
+            {
+                await ShowOnClickPostojiZahtjevUgovor();   
+            }
+            else if (postojiRacun > 0)
+            {
+                await ShowOnClickPostojiRacun();
+            }
+            else
+            {
+                context.Stol.Remove(stolEdit);
+                await context.SaveChangesAsync();
+                stolasList = await PrikaziSve();
+                await StolDataGrid.Refresh();
+            }
+
+        }
+    }
+    public async Task<List<Stol>> PrikaziSve()
+    {
+        return await context.Stol.AsNoTracking().ToListAsync();
+    }
+    public async Task<List<VrstaStola>> PrikaziSveVrste()
+    {
+        return await context.VrstaStola.AsNoTracking().ToListAsync();
+    }
+    private async Task HandleValidSubmit()
+    {
+        if (stol.StolVrstaStola == 0)
+        {
+            await ShowOnClickVrstaStola();
+        }
+        else
+        {
+            var brojStolova = await context.Stol.CountAsync();
+
+            if (brojStolova == 0)
+            {
+                stol.RedniBroj = 1;
+            }
+            else
+            {
+                var najveciRedniBroj = await context.Stol.MaxAsync(x => x.RedniBroj);
+                stol.RedniBroj = najveciRedniBroj + 1;
+            }
+
+            stol.Status = "SLOBODAN";
+
+            // Clear the Id to ensure it is not set manually
+            stol.Id = 0;
+
+            context.Stol.Add(stol);
+
+            await context.SaveChangesAsync();
+
+            await ShowOnClickUspjesno();
+
+            stolasList = await PrikaziSve();
+
+            IsVisibleStol = false;
+
+            stol = new Stol(); // Reset the stol object
+
+            await StolDataGrid.Refresh();
+        }
+    }
+
+
+    private async Task OnClose()
+    {
+        IsVisibleStol = false;
+        IsVisibleStolEdit = false;
+        stol.RedniBroj = 0;
+        stol.StolVrstaStola = 0;
+        stol.Status = "";
+        stol.StolTrznica = 0;
+    }
+
+    private async Task HandleValidSubmitEdit()
+    {
+        if (stol.StolVrstaStola == 0)
+        {
+            ShowOnClickVrstaStola();
+        }
+        else
+        {
+
+            var stolaEdit = await context.Stol.Where(x => x.Id == stolSelectedItem.Id).FirstOrDefaultAsync();
+            stolaEdit.RedniBroj = stol.RedniBroj;
+            stolaEdit.StolVrstaStola = stol.StolVrstaStola;
+            stolaEdit.Status = stol.Status;
+            stolaEdit.StolTrznica = stol.StolTrznica;
+            context.Stol.Update(stolaEdit);
+
+            await context.SaveChangesAsync();
+
+            await ShowOnClickUspjesno();
+
+            stolasList = await PrikaziSve();
+
+            IsVisibleStolEdit = false;
+            stol.RedniBroj = 0;
+            stol.StolVrstaStola = 0;
+            stol.Status = "";
+            stol.StolTrznica = 0;
+            await StolDataGrid.Refresh();
+
+        }
+
+    }
+
+    private async Task ShowOnClickRedniBroj()
+    {
+        await this.ToastObjRedniBroj.ShowAsync();
+    }
+    private async Task ShowOnClickVrstaStola()
+    {
+        await this.ToastObjVrstaStola.ShowAsync();
+    }
+    private async Task ShowOnClickPostojiUgovor()
+    {
+        await this.ToastObjPostojiUgovor.ShowAsync();
+    }
+    private async Task ShowOnClickPostojiZahtjevUgovor()
+    {
+        await this.ToastObjPostojiZahtjevUgovor.ShowAsync();
+    }
+    private async Task ShowOnClickPostojiRacun()
+    {
+        await this.ToastObjPostojiRacun.ShowAsync();
+    }
+
+    SfToast ToastObjUspjesno;
+    SfToast ToastObjRedniBroj;
+    SfToast ToastObjVrstaStola;
+    SfToast ToastObjOpis;
+    SfToast ToastObjPostojiUgovor;
+    SfToast ToastObjPostojiZahtjevUgovor;
+    SfToast ToastObjPostojiRacun;
+
+    private async Task ShowOnClickUspjesno()
+    {
+        await this.ToastObjUspjesno.ShowAsync();
+    }
+    private string ToastPosition = "Right";
+    private string ToastContentUspjesno = "Uspješan unos!";
+    private string ToastContentRedniBroj = "Potebno je unijeti redni broj!";
+    private string ToastContentOpis = "Potebno je unijeti opis!";
+    private string ToastContentVrstaStola = "Potebno je odabrati vrstu stola!";
+    private string ToastContentPostojiUgovor = "Nije moguće obrisati stol jer je na njega vezan ugovor!";
+    private string ToastContentPostojiZahtjevUgovor = "Nije moguće obrisati stol jer je na njega vezan zahtjev za ugovor!";
+    private string ToastContentPostojiRacun = "Nije moguće obrisati stol jer je na njega vezan račun!";
+}

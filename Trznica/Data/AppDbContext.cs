@@ -7,14 +7,16 @@ namespace Trznica.Data
     {
         protected readonly IConfiguration Configuration;
 
-        public AppDbContext(IConfiguration configuration)
-        {
-            Configuration = configuration;
-        }
+        //public AppDbContext(IConfiguration configuration)
+        //{
+        //    Configuration = configuration;
+        //}
+
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(Configuration.GetConnectionString("DbConnectionString"));
+            optionsBuilder.UseSqlServer("Server=localhost;Database=Trznica;Trusted_Connection=True");
         }
 
         public DbSet<VrstaStola> VrstaStola { get; set; }

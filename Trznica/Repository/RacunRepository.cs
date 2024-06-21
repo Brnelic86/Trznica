@@ -9,5 +9,9 @@
         //Delete
 
         //getAll()
+
+        //OBRACUNAVANJE IZNOSA - NAPLATA
+
+        //IZVJESTAJ - IZDANI RACUNI U RAZDOBLJU
     }
 }

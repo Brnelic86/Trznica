@@ -1,11 +1,16 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavManager
 
 <PageTitle>Trznica</PageTitle>
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+
+    @if (!NavManager.Uri.Equals(NavManager.BaseUri) && !NavManager.Uri.Contains("korisnik"))
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+    }
 
     <main>
         <div class="top-row px-4">

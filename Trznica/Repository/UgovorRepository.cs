@@ -9,5 +9,11 @@
         //Delete
 
         //getAll()
+
+        //KREIRANJE IZVJEŠTAJA - VALIDNI UGOVORI U RAZDOBLJU
+
+        //KREIRANJE IZVJEŠTAJA - IZDANI UGOVORI U RAZDOBLJU
+
+        //ISTICANJE UGOVORA
     }
 }

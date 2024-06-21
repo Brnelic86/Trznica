@@ -1,0 +1,338 @@
+﻿@page "/Racun"
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@using Microsoft.EntityFrameworkCore
+@using System.Text
+@using System.Security.Cryptography
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Drawing
+@using Syncfusion.Pdf
+@using Syncfusion.Pdf.Graphics
+@using Syncfusion.Pdf.Grid
+@using System.Data
+@using Trznica.Data
+@using Trznica.Models;
+@using Syncfusion.Blazor.Grids;
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Notifications
+
+@if (vrstaKorisnika == "KORISNIK")
+{
+    <h3>Nemate dozvolu za određenu akciju!</h3>
+}
+else
+{
+   
+
+    <SfGrid @ref="RacunDataGrid" DataSource="@racunsList" AllowPaging="true" Toolbar="@Toolbaritems" Height="100%">
+        <GridEvents OnToolbarClick="ToolbarClickHandler" RowSelected="args => racunSelectedItem = args.Data" TValue="Racun"></GridEvents>
+        <GridEditSettings AllowAdding="true" AllowEditing="true" AllowDeleting="true" Mode="EditMode.Normal"></GridEditSettings>
+        <GridColumns>
+            <GridColumn Field=@nameof(racun.Id) Visible="false" IsPrimaryKey="true"></GridColumn>
+            <GridColumn Field=@nameof(racun.DatumRacuna) HeaderText="Datum računa"></GridColumn>
+            <GridColumn Field=@nameof(racun.TipRacuna) HeaderText="Tip računa"></GridColumn>
+            <GridColumn Field=@nameof(racun.Iznos) HeaderText="Iznos"></GridColumn>
+            <GridColumn Field=@nameof(racun.Status) HeaderText="Status"></GridColumn>
+        </GridColumns>
+    </SfGrid>
+}
+
+<Syncfusion.Blazor.Popups.SfDialog Visible="IsVisibleStol" Width="700px">
+    <EditForm Model="@racun" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label for="brand">Korisnik: </label>
+            <SfComboBox @bind-Value="racun.RacunKorisnik" TValue="int" TItem="Korisnik" Placeholder="Odaberite korisnika" DataSource="@vrstaStolasList">
+                <ComboBoxFieldSettings Value="@nameof(Korisnik.Id)" Text="@nameof(Korisnik.ImePrezime)"></ComboBoxFieldSettings>
+            </SfComboBox>
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="brand">Tip računa: </label>
+            <SfComboBox @bind-Value="racun.TipRacuna" TValue="string" TItem="string" Placeholder="Odaberite tip" DataSource="@tipUgovorList">
+            </SfComboBox>
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="brand">Stol: </label>
+            <SfComboBox @bind-Value="racun.RacunStol" TValue="int" TItem="Stol" Placeholder="Odaberite stol" DataSource="@stolasList" >
+                <ComboBoxFieldSettings Value="@nameof(Stol.Id)" Text="@nameof(Stol.RedniBroj)"></ComboBoxFieldSettings>
+            </SfComboBox>
+        </div>
+        <br />
+        <button type="submit" class="btn btn-primary">Spremi</button>
+    </EditForm>
+    <div class="row">
+        <div class="col-10"></div>
+        <div class="col-2">
+            <button @onclick="OnClose" class="btn btn-outline-secondary">Odustani</button>
+        </div>
+    </div>
+</Syncfusion.Blazor.Popups.SfDialog>
+
+<Syncfusion.Blazor.Popups.SfDialog Visible="IsVisibleStolEdit" Width="700px">
+    <EditForm Model="@racun" OnValidSubmit="HandleValidSubmitEdit">
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label for="brand">Korisnik: </label>
+            <SfComboBox @bind-Value="racun.RacunKorisnik" TValue="int" TItem="Korisnik" Placeholder="Odaberite korisnika" DataSource="@vrstaStolasList">
+                <ComboBoxFieldSettings Value="@nameof(Korisnik.Id)" Text="@nameof(Korisnik.ImePrezime)"></ComboBoxFieldSettings>
+            </SfComboBox>
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="brand">Tip računa: </label>
+            <SfComboBox @bind-Value="racun.TipRacuna" TValue="string" TItem="string" Placeholder="Odaberite tip" DataSource="@tipUgovorList">
+            </SfComboBox>
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="brand">Stol: </label>
+            <SfComboBox @bind-Value="racun.RacunStol" TValue="int" TItem="Stol" Placeholder="Odaberite stol" DataSource="@stolasList">
+                <ComboBoxFieldSettings Value="@nameof(Stol.Id)" Text="@nameof(Stol.RedniBroj)"></ComboBoxFieldSettings>
+            </SfComboBox>
+        </div>
+        <br />
+        <div class="form-group">
+            <label for="brand">Iznos: </label>
+            <InputNumber @bind-Value="racun.Iznos" TValue="decimal">
+            </InputNumber>
+        </div>
+        <br />
+        <div class="row">
+            <div class="col-2">
+                <button type="submit" class="btn btn-primary">Spremi</button>
+            </div>
+        </div>
+    </EditForm>
+    <div class="row">
+        <div class="col-10"></div>
+        <div class="col-2">
+            <button @onclick="OnClose" class="btn btn-outline-secondary">Odustani</button>
+        </div>
+    </div>
+</Syncfusion.Blazor.Popups.SfDialog>
+
+<SfToast ID="toast_default" @ref="ToastObjRedniBroj" Title="Upozorenje!" Content="@ToastContentRedniBroj" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+<SfToast ID="toast_default" @ref="ToastObjUspjesno" Title="Upozorenje!" Content="@ToastContentUspjesno" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+
+@code {
+    @using Syncfusion.Blazor.Popups;
+    @using System;
+    @using System.Collections.Generic;
+    @using System.Linq;
+    @using System.IO;
+    @inject Microsoft.JSInterop.IJSRuntime JS
+
+    public SfGrid<Racun> RacunDataGrid { get; set; }
+
+    private Racun racun = new Racun();
+    private Racun racunSelectedItem { get; set; }
+
+    private List<Object> Toolbaritems = new List<Object>()
+    {
+        new ItemModel() { Text = "Dodaj", TooltipText = "Dodaj", PrefixIcon = "e-plus", Id = "Dodaj" },
+        new ItemModel() { Text = "Izbriši", TooltipText = "Izbriši", PrefixIcon = "e-edit", Id = "Izbrisi" },
+        new ItemModel() { Text = "Kreiraj izvještaj", TooltipText = "Kreiraj izvještaj za račune", PrefixIcon="e-edit", Id = "Izvjestaj" }
+    };
+
+    AppDbContext context = new AppDbContext();
+    public bool IsVisibleStol { get; set; }
+    public bool IsVisibleStolEdit { get; set; }
+
+    public List<Racun> racunsList { get; set; }
+    public List<Korisnik> vrstaStolasList { get; set; }
+    public List<Stol> stolasList { get; set; }
+    public List<string> tipUgovorList = new List<string> { "DNEVNI", "MJESEČNI", "GODIŠNJI" };
+
+    string vrstaKorisnika = null;
+    int? idKorisnika = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        idKorisnika = await sessionStorage.GetItemAsync<int>("ID");
+        vrstaKorisnika = await context.Korisnik.Where(x => x.Id == idKorisnika).Select(x => x.VrstaKorisnika).FirstOrDefaultAsync();
+        racunsList = await PrikaziSve();
+        vrstaStolasList = await PrikaziSveVrste();
+        stolasList = await PrikaziSveStolova();
+    }
+
+   
+    public async Task ToolbarClickHandler(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+    {
+        if (args.Item.Text == "Dodaj")
+        {
+            IsVisibleStol = true;
+        }
+        else if (args.Item.Text == "Uredi")
+        {
+            racun = racunSelectedItem;
+            IsVisibleStolEdit = true;
+        }
+        else if (args.Item.Text == "Izbriši")
+        {
+            var stolEdit = await context.Racun.Where(x => x.Id == racunSelectedItem.Id).FirstOrDefaultAsync();
+            context.Racun.Remove(stolEdit);
+            await context.SaveChangesAsync();
+            racunsList = await PrikaziSve();
+            await RacunDataGrid.Refresh();
+        }
+        else if (args.Item.Text == "Kreiraj izvještaj")
+        {
+            await ExportToPdf();
+        }
+    }
+
+    public async Task<List<Racun>> PrikaziSve()
+    {
+        return await context.Racun.AsNoTracking().ToListAsync();
+    }
+
+    public async Task<List<Korisnik>> PrikaziSveVrste()
+    {
+        return await context.Korisnik.AsNoTracking().ToListAsync();
+    }
+
+    public async Task<List<Stol>> PrikaziSveStolova()
+    {
+        return await context.Stol.AsNoTracking().ToListAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (racun.RacunKorisnik == 0)
+        {
+            ShowOnClickRedniBroj();
+        }
+        else
+        {
+            racun.Status = "AKTIVAN";
+            racun.DatumRacuna = DateTime.Now;
+            var stol = await context.Stol.Where(x => x.Id == racun.RacunStol).FirstOrDefaultAsync();
+            if (racun.TipRacuna == "DNEVNI"){
+            racun.Iznos = await context.VrstaStola.Where(x => x.Id == stol.StolVrstaStola).Select(x => x.CijenaDan).FirstOrDefaultAsync();
+            }
+            else if (racun.TipRacuna == "MJESEČNI")
+            {
+                racun.Iznos = await context.VrstaStola.Where(x => x.Id == stol.StolVrstaStola).Select(x => x.CijenaMjesec).FirstOrDefaultAsync();
+            }
+            else 
+            {
+                racun.Iznos = await context.VrstaStola.Where(x => x.Id == stol.StolVrstaStola).Select(x => x.CijenaGodina).FirstOrDefaultAsync();
+            }
+            // Resetiranje Id-a kako bi baza podataka automatski generirala vrijednost
+            racun.Id = 0;
+
+            context.Racun.Add(racun);
+            await context.SaveChangesAsync();
+            await ShowOnClickUspjesno();
+
+            racunsList = await PrikaziSve();
+            IsVisibleStol = false;
+            racun.RacunKorisnik = 0;
+            racun.TipRacuna = "";
+            await RacunDataGrid.Refresh();
+        }
+    }
+
+
+    private async Task OnClose()
+    {
+        IsVisibleStol = false;
+        IsVisibleStolEdit = false;
+        racun.RacunKorisnik = 0;
+        racun.TipRacuna = "";
+    }
+
+    private async Task HandleValidSubmitEdit()
+    {
+        if (racun.RacunKorisnik == 0)
+        {
+            ShowOnClickRedniBroj();
+        }
+        else
+        {
+            var stolaEdit = await context.Racun.Where(x => x.Id == racunSelectedItem.Id).FirstOrDefaultAsync();
+            racun.DatumRacuna = DateTime.Now;
+            context.Racun.Update(stolaEdit);
+
+            await context.SaveChangesAsync();
+            await ShowOnClickUspjesno();
+
+            racunsList = await PrikaziSve();
+            IsVisibleStolEdit = false;
+            racun.RacunKorisnik = 0;
+            racun.TipRacuna = "";
+            await RacunDataGrid.Refresh();
+        }
+    }
+
+    private async Task ShowOnClickRedniBroj()
+    {
+        await this.ToastObjRedniBroj.ShowAsync();
+    }
+
+    SfToast ToastObjUspjesno;
+    SfToast ToastObjRedniBroj;
+    SfToast ToastObjOpis;
+    private async Task ShowOnClickUspjesno()
+    {
+        await this.ToastObjUspjesno.ShowAsync();
+    }
+
+    private string ToastPosition = "Right";
+    private string ToastContentUspjesno = "Uspješan unos!";
+    private string ToastContentRedniBroj = "Potrebno je odabrati korisnika!";
+    private string ToastContentOpis = "Potrebno je unijeti opis!";
+
+    DataTable dataTable = new DataTable();
+
+    public async Task ExportToPdf()
+    {
+        if (dataTable.Columns.Count == 0)
+        {
+            dataTable.Columns.Add("Tip računa");
+            dataTable.Columns.Add("Datum računa");
+            dataTable.Columns.Add("Korisnik");
+            dataTable.Columns.Add("Iznos");
+        }
+
+        dataTable.Rows.Clear();
+
+        foreach (var item in racunsList)
+        {
+            var korisnik = await context.Korisnik.Where(x => x.Id == item.RacunKorisnik).Select(x => x.ImePrezime).FirstOrDefaultAsync();
+            dataTable.Rows.Add(new object[] { item.TipRacuna, item.DatumRacuna.ToString(), korisnik, item.Iznos.ToString() });
+        }
+
+        int paragraphAfterSpacing = 8;
+        int cellMargin = 8;
+
+        PdfDocument pdfDocument = new PdfDocument();
+        PdfPage page = pdfDocument.Pages.Add();
+        PdfStandardFont font = new PdfStandardFont(PdfFontFamily.TimesRoman, 16);
+        PdfTextElement title = new PdfTextElement("Računi", font, PdfBrushes.Black);
+        PdfLayoutResult result = title.Draw(page, new PointF(0, 0));
+        PdfStandardFont contentFont = new PdfStandardFont(PdfFontFamily.TimesRoman, 12);
+        PdfTextElement content = new PdfTextElement("Računi za godinu 2024.", contentFont, PdfBrushes.Black);
+        PdfLayoutFormat format = new PdfLayoutFormat { Layout = PdfLayoutType.Paginate };
+        result = content.Draw(page, new RectangleF(0, result.Bounds.Bottom + paragraphAfterSpacing, page.GetClientSize().Width, page.GetClientSize().Height), format);
+
+        PdfGrid pdfGrid = new PdfGrid
+            {
+                Style = { CellPadding = { Left = cellMargin, Right = cellMargin } }
+            };
+        pdfGrid.ApplyBuiltinStyle(PdfGridBuiltinStyle.GridTable4Accent1);
+        pdfGrid.DataSource = dataTable;
+        pdfGrid.Style.Font = contentFont;
+        pdfGrid.Draw(page, new Syncfusion.Drawing.PointF(0, result.Bounds.Bottom + paragraphAfterSpacing));
+
+        MemoryStream memoryStream = new MemoryStream();
+        pdfDocument.Save(memoryStream);
+        JS.SaveAs("Racuni.pdf", memoryStream.ToArray());
+    }
+}

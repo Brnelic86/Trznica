@@ -1,0 +1,251 @@
+﻿@page "/korisnik"
+@using Microsoft.EntityFrameworkCore
+@using System.Text
+@using System.Security.Cryptography
+@using Trznica.Data
+@using Trznica.Models
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Notifications
+
+<h3>Dodaj korisnika</h3>
+
+<EditForm Model="@korisnik" >
+    <DataAnnotationsValidator />
+
+    <div class="form-group">
+        <label for="imePrezime">Ime i prezime: </label>
+        <InputText id="imePrezime" @bind-Value="korisnik.ImePrezime" class="form-control" />
+        <ValidationMessage For="@(() => korisnik.ImePrezime)" />
+    </div>
+    <br />
+    <div class="form-group">
+        <label for="oib">OIB: </label>
+        <InputText id="oib" @bind-Value="korisnik.OIB" class="form-control" />
+        <ValidationMessage For="@(() => korisnik.OIB)" />
+    </div>
+    <br />
+    <div class="form-group">
+        <label for="korisnickoIme">Korisničko ime: </label>
+        <InputText id="korisnickoIme" @bind-Value="korisnik.KorisnickoIme" class="form-control" />
+        <ValidationMessage For="@(() => korisnik.KorisnickoIme)" />
+    </div>
+    <br />
+    <div class="form-group">
+        <label for="lozinka">Lozinka: </label>
+        <InputText id="lozinka" type="password" placeholder="Lozinka" @bind-Value="korisnik.Lozinka" class="form-control" />
+        <ValidationMessage For="@(() => korisnik.Lozinka)" />
+    </div>
+    <br />
+    @* <div class="form-group">
+        <label for="vrstaKorisnika">Vrsta: </label>
+        <InputText id="vrstaKorisnika" @bind-Value="korisnik.VrstaKorisnika" class="form-control" />
+        <ValidationMessage For="@(() => korisnik.VrstaKorisnika)" />
+    </div>
+    <br /> *@
+
+    <button @onclick="HandleValidSubmit" class="btn btn-primary">Registracija</button>
+</EditForm>
+
+<SfToast ID="toast_default" @ref="ToastObjImePrezime" Title="Upozorenje!" Content="@ToastContentImePrezime" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+
+<SfToast ID="toast_default" @ref="ToastObjOIB" Title="Upozorenje!" Content="@ToastContentOIB" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+
+<SfToast ID="toast_default" @ref="ToastObjKIme" Title="Upozorenje!" Content="@ToastContentKIme" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+
+<SfToast ID="toast_default" @ref="ToastObjLozinka" Title="Upozorenje!" Content="@ToastContentLozinka" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+
+<SfToast ID="toast_default" @ref="ToastObjVrsta" Title="Upozorenje!" Content="@ToastContentVrsta" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+
+<SfToast ID="toast_default" @ref="ToastObjUspjesno" Title="Upozorenje!" Content="@ToastContentUspjesno" Timeout="4000" Icon="e-meeting">
+    <ToastPosition X="@ToastPosition"></ToastPosition>
+</SfToast>
+
+ 
+
+<style>
+    @@font-face {
+        font-family: 'Toast_icons';
+        src: url(data:application/x-font-ttf;charset=utf-8;base64,...);
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    img {
+        width: 100%;
+        height: 70%;
+    }
+
+    .toast-icons {
+        font-family: 'Toast_icons' !important;
+        speak: none;
+        font-size: 55px;
+        font-style: normal;
+        font-weight: normal;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    #toast_custom .e-toast .e-toast-title,
+    #toast_custom .e-toast .e-toast-message,
+    #toast_custom .e-toast .e-toast-message .e-toast-content,
+    #toast_custom .e-toast .e-toast-close-icon {
+        color: #fff;
+    }
+
+    #toast_custom .e-toast-container .e-toast .e-toast-message .e-toast-content {
+        padding: 14px 0 0 0;
+    }
+
+    #toast_custom .e-toast-template {
+        display: inline-flex;
+    }
+
+    #toast_custom .e-toast-icon.e-toast-image {
+        border-radius: 50%;
+        background-repeat: no-repeat;
+        background-size: cover;
+        height: 50px !important;
+        width: 50px !important;
+        background-size: 50px 50px;
+        align-self: center;
+    }
+
+    #toast_custom .camden .e-toast-icon.e-toast-image,
+    #toast_custom .chase .e-toast-icon.e-toast-image {
+        width: 65px !important;
+    }
+
+    #template_toast .horizontal-align .toast-content .toast-title {
+        font-weight: 500;
+        color: #fff;
+    }
+
+    #template_toast .horizontal-align .toast-content .toast-message {
+        opacity: 0.75;
+        color: #fff;
+    }
+
+    #template_toast .toast-icons {
+        font-size: 35px;
+        height: auto;
+        margin: auto;
+    }
+
+    #template_toast .horizontal-align {
+        display: inline-flex;
+        flex-direction: row;
+        width: 100%;
+    }
+
+        #template_toast .horizontal-align .toast-content {
+            display: inline-flex;
+            flex: 1;
+            flex-direction: column;
+            margin-left: 10px;
+        }
+
+</style>
+
+@code {
+    private Korisnik korisnik = new Korisnik();
+    private AppDbContext context = new AppDbContext();
+    public List<Korisnik> Orders { get; set; }
+    @inject NavigationManager NavManager
+
+    protected override async Task OnInitializedAsync()
+    {
+        Orders = await PrikaziSve();
+    }
+
+    public async Task<List<Korisnik>> PrikaziSve()
+    {
+        return await context.Korisnik.AsNoTracking().ToListAsync();
+    }
+
+    private bool otvori { get; set; }
+
+    private async Task HandleValidSubmit()
+    {
+        var inputBytes = Encoding.ASCII.GetBytes(korisnik.Lozinka.Trim());
+
+        var hash = SHA1.HashData(inputBytes);
+
+        var sb = new StringBuilder();
+        foreach (var b in hash)
+        {
+            sb.Append(b.ToString("X3"));
+        }
+
+        korisnik.Lozinka = sb.ToString();
+
+        korisnik.VrstaKorisnika = "KORISNIK";
+
+        context.Korisnik.Add(korisnik);
+
+        await context.SaveChangesAsync();
+
+        await ShowOnClickUspjesno();
+        
+           NavManager.NavigateTo("/");
+        
+    }
+
+    public SfToast ToastObjImePrezime { get; set; }
+    public SfToast ToastObjOIB { get; set; }
+    public SfToast ToastObjKIme { get; set; }
+    public SfToast ToastObjLozinka { get; set; }
+    public SfToast ToastObjVrsta { get; set; }
+    public SfToast ToastObjUspjesno { get; set; }
+
+    public string ToastContentImePrezime { get; set; } = "Polje ime i prezime je prazno!";
+    public string ToastContentOIB { get; set; } = "OIB mora sadržavati točno 11 znamenki.";
+    public string ToastContentKIme { get; set; } = "Polje korisničko ime je prazno!";
+    public string ToastContentLozinka { get; set; } = "Polje lozinka je prazno!";
+    public string ToastContentVrsta { get; set; } = "Polje vrsta je prazno!";
+    public string ToastContentUspjesno { get; set; } = "Korisnik uspješno registriran!";
+    private string ToastPosition = "Right";
+
+    public async Task ShowOnClickImePrezime()
+    {
+        await this.ToastObjImePrezime.ShowAsync();
+    }
+
+    public async Task ShowOnClickOIB()
+    {
+        await this.ToastObjOIB.ShowAsync();
+    }
+
+    public async Task ShowOnClickKIme()
+    {
+        await this.ToastObjKIme.ShowAsync();
+    }
+
+    public async Task ShowOnClickLozinka()
+    {
+        await this.ToastObjLozinka.ShowAsync();
+    }
+
+    public async Task ShowOnClickVrsta()
+    {
+        await this.ToastObjVrsta.ShowAsync();
+    }
+
+    public async Task ShowOnClickUspjesno()
+    {
+        await this.ToastObjUspjesno.ShowAsync();
+    }
+}
